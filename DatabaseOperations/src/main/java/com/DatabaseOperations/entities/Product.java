@@ -68,7 +68,7 @@ public class Product
     @Column(name="base_price",nullable = false,precision = 10,scale = 2)
     private BigDecimal basePrice;
 
-    @Column(name="base_price",nullable = false,precision = 10,scale = 2)
+    @Column(name="discounted_price",nullable = false,precision = 10,scale = 2)
     private Integer discountedPrice;
 
     @Column(name="discount_percentage")
@@ -107,18 +107,13 @@ public class Product
     @Builder.Default
     private Long viewCount=0L;
 
-    @Column(name="view_count",nullable = false)
+    @Column(name="order_count",nullable = false)
     @Builder.Default
     private Integer orderCount=0;
 
-    @Column(name="view_count",nullable = false)
+    @Column(name="avg_rating",nullable = false)
     @Builder.Default
     private Double avgRating=0.0;
-    
-    @Column(name="view_count",nullable = false)
-    @Builder.Default
-    private Integer reviewCount=0;
-
 
     //For search optimization
 

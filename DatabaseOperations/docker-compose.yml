@@ -6,10 +6,12 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: user
       POSTGRES_DB: mydb
+      TZ: UTC
+      PGTZ: UTC
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
@@ -17,10 +19,10 @@ services:
     environment:
       - node.name=elasticsearch
       - cluster.name=es-docker-cluster
-      - discovery-type=single-node
+      - discovery.type=single-node
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
-      - "ES_JAVA_OPTS= Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
 
     ulimits:
       memlock:
@@ -28,7 +30,7 @@ services:
         hard: -1
 
     volumes:
-      - elasticsearch-data:/ussr/share/elasticsearch/data
+      - elasticsearch-data:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
 
@@ -41,7 +43,14 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     depends_on:
       - elasticsearch
-    
+  
+  adminer:
+    image: adminer
+    restart: always
+    depends_on: 
+      - postgres
+    ports:
+      - 8080:8080
 
 volumes:
   postgres_data:
