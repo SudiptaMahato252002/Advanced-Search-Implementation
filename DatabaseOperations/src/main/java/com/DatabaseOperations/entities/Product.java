@@ -17,6 +17,8 @@ import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -69,7 +71,7 @@ public class Product
     private BigDecimal basePrice;
 
     @Column(name="discounted_price",nullable = false,precision = 10,scale = 2)
-    private Integer discountedPrice;
+    private BigDecimal discountedPrice;
 
     @Column(name="discount_percentage")
     private Integer discountedPercentage;
@@ -82,6 +84,7 @@ public class Product
     @Builder.Default
     private Integer stockQuantity=0;
     
+    @Enumerated(EnumType.STRING)
     @Column(name="stock_status",nullable=false,length=20)
     @Builder.Default
     private StockStatus stockStatus=StockStatus.OUT_OF_STOCK;
@@ -155,7 +158,7 @@ public class Product
     //helpers
     public BigDecimal getCurrentPrice()
     {
-        BigDecimal price=discountedPrice!=null?BigDecimal.valueOf(discountedPrice):basePrice;
+        BigDecimal price=discountedPrice!=null?discountedPrice:basePrice;
         return price;
     }
 
