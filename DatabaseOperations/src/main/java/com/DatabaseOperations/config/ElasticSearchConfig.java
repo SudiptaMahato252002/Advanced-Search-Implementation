@@ -3,14 +3,18 @@ package com.DatabaseOperations.config;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 
+@Configuration
 public class ElasticSearchConfig 
 {
+    @Autowired
     private ElasticSearchProperties elasticSearchProperties;
 
     @Bean
@@ -47,6 +51,7 @@ public class ElasticSearchConfig
         }
     }
 
+    @Bean
     public ElasticsearchClient elasticSearchClient(RestClient restClient)
     {
         try 
@@ -72,7 +77,7 @@ public class ElasticSearchConfig
         }
     }
     
-    public boolean testConnection(ElasticsearchClient client)
+    private boolean testConnection(ElasticsearchClient client)
     {
         try 
         {

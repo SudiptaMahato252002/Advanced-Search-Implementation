@@ -92,7 +92,7 @@ public class ElasticSearchHealthController
         Map<String,Object> response=new HashMap<>();
         try 
         {
-            var indices=client.cat().indices().indices();
+            var indices=client.cat().indices().valueBody();
              response.put("count", indices.size());
             response.put("indices", indices.stream()
                 .map(index -> Map.of(
