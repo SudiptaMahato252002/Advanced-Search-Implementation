@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -16,6 +18,8 @@ public class ElasticSearchConfig
 {
     @Autowired
     private ElasticSearchProperties elasticSearchProperties;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Bean
     public RestClient restClient()
@@ -56,7 +60,7 @@ public class ElasticSearchConfig
     {
         try 
         {
-            RestClientTransport transport=new RestClientTransport(restClient,new JacksonJsonpMapper());
+            RestClientTransport transport=new RestClientTransport(restClient,new JacksonJsonpMapper(objectMapper));
             ElasticsearchClient client=new ElasticsearchClient(transport);
 
             if(testConnection(client))

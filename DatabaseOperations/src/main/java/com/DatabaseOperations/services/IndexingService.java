@@ -29,6 +29,8 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Service
 public class IndexingService 
 {
@@ -144,12 +146,17 @@ public class IndexingService
     {
         try 
         {
+            log.info("Inside the indexing service");
             List<Product> products=productRepo.findAll();
+            int len=products.size();
+            log.info("Retrived produts from the repos '{}'",len);
             if(products.isEmpty())
             {
                 return 0;
             }
+            log.info("Starting to convert to Product Documents ");
             List<ProductDocument> documents=products.stream().map(productDocumentMapper::toDocument).collect(Collectors.toList());
+            log.info("Starting bulk indexing");
             int indexed=bulkIndexDocuments(documents);
 
             return indexed;
@@ -184,9 +191,10 @@ public class IndexingService
         {
             return 0;
         }
+        log.info("starting the bulk operations");
         List<BulkOperation> bulkOperations=documents.stream()
                     .map(doc->BulkOperation.of(b->b.index(idx->idx.index(INDEX_NAME).id(String.valueOf(doc.getId())).document(doc)))).collect(Collectors.toList());
-
+        log.info("Sending the bulk request");
         BulkRequest bulkRequest=BulkRequest.of(b->b.operations(bulkOperations));
         BulkResponse response=client.bulk(bulkRequest);
         

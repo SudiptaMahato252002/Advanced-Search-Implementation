@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.DatabaseOperations.services.IndexingService;
 
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @RestController
 @RequestMapping("/api/indexing")
 public class IndexingController 
@@ -79,6 +81,7 @@ public class IndexingController
         try 
         {
             long startTime=System.currentTimeMillis();
+            log.info("Starting indexing all products");
             int indexed=indexingService.indexAllProducts();
             long endTime=System.currentTimeMillis();
             long duration = endTime - startTime;
@@ -91,6 +94,7 @@ public class IndexingController
             return new ResponseEntity<>(response,HttpStatus.OK);
             
         } catch (Exception e) {
+            log.info("Exception '{}'",e);
             response.put("status", "ERROR");
             response.put("message", e.getMessage());
             return new ResponseEntity<>(response,HttpStatus.INTERNAL_SERVER_ERROR);
