@@ -53,6 +53,7 @@ public class ElasticSearchHealthController
         }
         
     }
+    
     @GetMapping("/cluster-info")
     public ResponseEntity<Map<String,Object>> getClusterInfo()
     {
@@ -86,7 +87,8 @@ public class ElasticSearchHealthController
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-     @GetMapping("/indices")
+    
+    @GetMapping("/indices")
     public ResponseEntity<Map<String,Object>> getIndices()
     {
         Map<String,Object> response=new HashMap<>();

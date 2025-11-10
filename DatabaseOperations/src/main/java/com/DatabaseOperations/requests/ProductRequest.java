@@ -36,5 +36,6 @@ public class ProductRequest
 
     private List<ProductVariantDto> variants;
     private List<ProductAttribute> attributes;
+    private String searchKeywords;
     
 }

@@ -29,8 +29,6 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.ExistsRequest;
-import lombok.var;
-
 @Service
 public class IndexingService 
 {
@@ -114,11 +112,11 @@ public class IndexingService
                 return response.acknowledged();
             
         } catch (Exception e) {
-            // TODO: handle exception
+          
             throw new RuntimeException("Failed to create index", e);
         }
     }
-    public boolean deleteProduction()
+    public boolean deleteProductIndex()
     {
         try 
         {
@@ -135,7 +133,7 @@ public class IndexingService
             return response.acknowledged();
             
         } catch (Exception e) {
-            // TODO: handle exception
+ 
             System.out.println("❌ Failed to delete index '" + INDEX_NAME + "' " + e.getMessage());
             throw new RuntimeException("Failed to delete index", e);
         }
@@ -159,7 +157,7 @@ public class IndexingService
         } 
         catch (Exception e) 
         {
-            // TODO: handle exception
+          
               throw new RuntimeException("Failed to index all products", e);
         }
 
@@ -176,7 +174,6 @@ public class IndexingService
         catch (IOException e) 
         {
             throw new RuntimeException("Failed to index product", e);
-            // TODO: handle exception
         }
 
     }

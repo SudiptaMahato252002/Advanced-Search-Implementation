@@ -139,6 +139,7 @@ public class CreatingService
                         .category(category)
                         .brand(brand)
                         .tags(req.getTags()!=null?req.getTags():new HashSet<>())
+                        .searchKeywords(req.getSearchKeywords()!=null?req.getSearchKeywords():generateKeywords(req, category, brand))
                         .build();
         productRepo.save(product);
 
@@ -211,4 +212,29 @@ public class CreatingService
         return productDto;
     }
 
+    private String generateKeywords(ProductRequest req,Category category,Brand brand)
+    {
+        StringBuilder keyword=new StringBuilder();
+        if(req.getName()!=null)
+        {
+            keyword.append(req.getName().toLowerCase()).append(" ");
+        }
+        keyword.append(brand.getName().toLowerCase()).append(" ");
+        keyword.append(category.getName().toLowerCase()).append(" ");
+        if(req.getTags()!=null)
+        {
+            req.getTags().forEach(tag->keyword.append(tag.toLowerCase()).append(" "));
+        }
+
+        if (req.getShortDescription() != null) 
+        {
+            keyword.append(req.getShortDescription().toLowerCase()).append(" ");
+        }
+
+        if (req.getFullDescription() != null) 
+        {
+            keyword.append(req.getFullDescription().toLowerCase()).append(" ");
+        }
+        return keyword.toString().trim();
+    }
 }
