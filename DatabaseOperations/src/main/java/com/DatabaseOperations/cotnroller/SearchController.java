@@ -1,6 +1,4 @@
 package com.DatabaseOperations.cotnroller;
-
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,6 +121,21 @@ public class SearchController
         @RequestParam(defaultValue = "10") int size
     )
     {
+
+        if(minPrice!=null&&minPrice<0)
+        {
+            minPrice=0.0;
+        }
+        if(maxPrice != null && maxPrice < 0)
+        {
+            maxPrice = null;
+        }
+        if(minPrice>maxPrice)
+        {
+            Double temp=maxPrice;
+            maxPrice=minPrice;
+            minPrice=temp;
+        }
         
         log.info("🔍 Search by price: {} - {}", minPrice, maxPrice);
         SearchResponse response=searchService.searchWithFilters(null, null, null, minPrice, maxPrice, null, page, size);
@@ -191,26 +204,15 @@ public class SearchController
         return new ResponseEntity<SearchResponse>(response,HttpStatus.OK);
     }
 
-    private String buildFilterWithSummary(List<String> brands, String category, 
-                                       Double minPrice, Double maxPrice, String stockStatus)
+    @GetMapping("/ranking")
+    public ResponseEntity<SearchResponse> ranking(
+        @RequestParam String q,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+    )
     {
-        List<String> filters=new ArrayList<>();
-        if(brands!=null && !brands.isEmpty())
-        {
-            filters.add("Brands: "+String.join(",",brands));
-        }
-        if (category != null && !category.trim().isEmpty()) {
-            filters.add("Category: " + category);
-        }
-        if(minPrice!=null||maxPrice!=null)
-        {
-            filters.add("Price: "+(minPrice!=null?minPrice:"0")+" - "+(maxPrice!=null?maxPrice:"∞"));
-        }
-        if (stockStatus != null && !stockStatus.trim().isEmpty()) {
-            filters.add("Stock: " + stockStatus);
-        }
-
-         return filters.isEmpty() ? "No filters" : String.join(", ", filters);
+        SearchResponse response=searchService.searchWithFuzzyRanking(q, false, page, size);
+        return new ResponseEntity<SearchResponse>(response, HttpStatus.OK);
     }
     
 }

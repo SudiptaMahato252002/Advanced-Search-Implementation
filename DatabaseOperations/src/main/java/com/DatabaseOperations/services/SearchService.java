@@ -210,7 +210,7 @@ public class SearchService
     {
         try {
             Long startTime=System.currentTimeMillis();
-            Query query=enableFuzzySearch?buildFuzzyMultiMatchQuery(searchQuery):buildMultiMatchQuery(searchQuery);
+            Query query=enableFuzzySearch?buildEnhancedFuzzyQuery(searchQuery):buildMultiMatchQuery(searchQuery);
             Query rankQuery=buildFunctionScoreQuery(query);
 
             SearchRequest searchRequest=SearchRequest.of(s->s
@@ -257,11 +257,21 @@ public class SearchService
             Long startTime=System.currentTimeMillis();
             log.info("🔍 Advanced search - Query: '{}', Fuzzy: {}, Sort: {}", searchQuery, enableFuzzy, sortBy);
 
+            if(searchQuery==null)
+            {
+                throw new Error("Please enter the query");
+            }
+            if(brandNames==null)
+            {
+                throw new Error("Please enter the brandnames");
+            }
+        
+
             BoolQuery.Builder boolQuery=new BoolQuery.Builder();
 
             if(searchQuery!=null||!searchQuery.trim().isEmpty())
             {
-                Query query=enableFuzzy?buildFuzzyMultiMatchQuery(searchQuery):buildMultiMatchQuery(searchQuery);
+                Query query=enableFuzzy?buildEnhancedFuzzyQuery(searchQuery):buildMultiMatchQuery(searchQuery);
                 boolQuery.must(query);
             }
             List<Query> filters=new ArrayList<>();
@@ -353,18 +363,84 @@ public class SearchService
             throw new RuntimeException("Advanced search failed", e);
         }
     }
-
-    private Query buildFuzzyMultiMatchQuery(String searchQuery)
+ 
+    private Query buildEnhancedFuzzyQuery(String searchQuery)
     {
-        return Query.of(q->q.multiMatch(MultiMatchQuery.of(mm->mm
-            .query(searchQuery)
-            .fields("name^3", "short_description^2", "full_description", "tags^2", "search_keywords")
-            .type(TextQueryType.BestFields)
-            .fuzziness("AUTO")
-            .prefixLength(2)
-            .maxExpansions(50))));
+        int queryLength=searchQuery.length();
+        String fuzziness=determineFuzziness(queryLength);
+
+        return Query.of(q->q
+            .bool(b->b
+                .should(List.of(
+                    Query.of(sq->sq
+                        .multiMatch(mm->mm
+                            .query(searchQuery)
+                            .fields("name.exact^10", "brand_name^8")
+                            .type(TextQueryType.Phrase)
+                            .boost(10.0f))),
+                    Query.of(sq->sq
+                        .multiMatch(mm->mm
+                            .query(searchQuery)
+                            .fields("name^5", "short_description^3", "tags^3", "search_keywords^2")
+                            .type(TextQueryType.BestFields)
+                            .boost(5.0f))),
+                    Query.of(sq->sq
+                        .multiMatch(mm->mm
+                            .query(searchQuery)
+                            .fields("name.synonym^4", "short_description.synonym^2", "tags.synonym^3", "search_keywords.synonym^2")
+                            .type(TextQueryType.BestFields)
+                            .boost(4.0f))),
+                    Query.of(sq->sq
+                        .multiMatch(mm->mm
+                            .query(searchQuery)
+                            .fields("name.phonetic^3", "short_description.phonetic^1.5", "tags.phonetic^2", "search_keywords.phonetic^1.5", "brand_name.phonetic^2")
+                            .type(TextQueryType.BestFields)
+                            .boost(3.0f))),
+                    Query.of(sq->sq
+                        .multiMatch(mm->mm
+                            .query(searchQuery)
+                            .fields("name^3", "short_description^2", "tags^2", "search_keywords")
+                            .type(TextQueryType.BestFields)
+                            .fuzziness(fuzziness)
+                            .prefixLength(0)
+                            .maxExpansions(50)
+                            .boost(2.5f)
+                        )),
+                    Query.of(sq->sq
+                        .multiMatch(mm->mm
+                            .query(searchQuery)
+                            .fields("name.edge")
+                            .query(searchQuery)
+                            .boost(1.5f)
+                        )),
+                    Query.of(sq -> sq
+                        .multiMatch(mm -> mm
+                            .query(searchQuery)
+                            .fields("full_description", "full_description.synonym")
+                            .type(TextQueryType.BestFields)
+                            .boost(1.0f)
+                        )
+                    )
+
+                )).minimumShouldMatch("1")));
     }
-    
+
+    private String determineFuzziness(int queryLength)
+    {
+        if(queryLength<=2)
+        {
+            return "0";
+        }
+        else if(queryLength<=5)
+        {
+            return "2";
+        }
+        else
+        {
+            return "AUTO";
+        }
+    }
+  
     private Query buildFunctionScoreQuery(Query baseQuery)
     {
         return Query.of(q->q
@@ -373,32 +449,32 @@ public class SearchService
                 .functions(List.of(
                     FunctionScore.of(fn->fn.fieldValueFactor(fvf->fvf
                         .field("view_count")
-                        .factor(0.0001)
+                        .factor(0.0002)
                         .modifier(FieldValueFactorModifier.Log1p)
                         .missing(1.0))
-                        .weight(1.5)),
+                        .weight(1.8)),
                     FunctionScore.of(fn->fn.fieldValueFactor(fvf->fvf
                         .field("order_count")
-                        .factor(0.001)
+                        .factor(0.002)
                         .modifier(FieldValueFactorModifier.Log1p)
                         .missing(1.0))
-                        .weight(2.0)),
+                        .weight(3.0)),
                     FunctionScore.of(fn->fn.fieldValueFactor(fvf->fvf
                         .field("avg_rating")
                         .factor(0.2)
                         .modifier(FieldValueFactorModifier.None)
                         .missing(0.0))
-                        .weight(1.2)),
+                        .weight(2.0)),
                     FunctionScore.of(fn->fn.filter(f->f.term(t->t
                         .field("stock_status")
                         .value("IN_STOCK")))
-                        .weight(1.5)),
+                        .weight(2.5)),
                     FunctionScore.of(fn->fn.fieldValueFactor(fvf->fvf
                         .field("search_boost")
-                        .factor(0.1)
+                        .factor(0.2)
                         .modifier(FieldValueFactorModifier.None)
                         .missing(1.0))
-                        .weight(1.0)),
+                        .weight(2.0)),
                     FunctionScore.of(fn->fn.gauss(g->g
                         .field("created_at")
                         .placement(p->p
@@ -406,11 +482,13 @@ public class SearchService
                             .scale(JsonData.of("365d"))
                             .decay(0.5)
                             ))
-                            .weight(0.5))
+                            .weight(0.8))
                     
                 ))
-                .scoreMode(FunctionScoreMode.Multiply)
-                .boostMode(FunctionBoostMode.Multiply)));
+                .scoreMode(FunctionScoreMode.Sum)
+                .boostMode(FunctionBoostMode.Multiply)
+                .maxBoost(100.0)
+                .minScore(0.1)));
     }
 
     private void addSorting(SearchRequest.Builder builder,String sortBy)
@@ -437,5 +515,4 @@ public class SearchService
                 break;
         }
     }
-
 }

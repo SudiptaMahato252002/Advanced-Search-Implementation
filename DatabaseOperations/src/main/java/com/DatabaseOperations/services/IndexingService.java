@@ -2,6 +2,7 @@ package com.DatabaseOperations.services;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import com.DatabaseOperations.mappers.ProductDocumentMapper;
 import com.DatabaseOperations.repositories.ProductRepository;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.analysis.PhoneticEncoder;
 import co.elastic.clients.elasticsearch._types.mapping.BooleanProperty;
 import co.elastic.clients.elasticsearch._types.mapping.DateProperty;
 import co.elastic.clients.elasticsearch._types.mapping.DoubleNumberProperty;
@@ -57,15 +59,61 @@ public class IndexingService
                 c.index(INDEX_NAME)
                 .settings(s->s.numberOfShards("1")
                                 .numberOfReplicas("0")
-                                .refreshInterval(t->t.time("1s")))
+                                .refreshInterval(t->t.time("1s"))
+                                .analysis(a->a
+                                    .filter("synonym_filter", f->f.definition(fd->fd
+                                        .synonym(syn->syn.synonyms(List.of(
+                                            "shoe, sneaker, footwear, kicks",
+                                            "laptop, notebook, computer",
+                                            "phone, mobile, smartphone, cellphone, fone",
+                                            "tv, television, tele",
+                                            "headphone, earphone, earbuds, headset"
+                                        )))))
+                                    .filter("phonetic_fitler", f->f.definition(fd->fd
+                                        .phonetic(ph->ph
+                                            .encoder(PhoneticEncoder.DoubleMetaphone)
+                                            .replace(false))))
+                                    .filter("edge_ngram_filter",f->f.definition(fd->fd
+                                        .edgeNgram(en->en
+                                            .minGram(2)
+                                            .maxGram(15)
+                                    )))
+                                    .analyzer("synonym_analyzer",an->an.custom(ca->ca
+                                        .tokenizer("standard")
+                                        .filter("lowercase","synonym_filter")
+                                    ))
+                                    .analyzer("phonetic_analyzer",an->an.custom(ca->ca
+                                        .tokenizer("standard")
+                                        .filter("lowercase", "phonetic_filter")
+                                    ))
+                                    .analyzer("edge_ngram_analyzer", an->an.custom(ca->ca
+                                        .tokenizer("standard")
+                                        .filter("lowercase", "edge_ngram_filter")
+                                    ))
+                                
+                                )
+                            )
                                 
                 .mappings(m->m
                     .properties("id",Property.of(p->p.long_(LongNumberProperty.of(l->l))))
                     .properties("sku",Property.of(p->p.keyword(KeywordProperty.of(k->k))))
-                    .properties("name",Property.of(p->p.text(TextProperty.of(t->t.analyzer("standard")))))
+                    .properties("name",Property.of(p->p.text(TextProperty.of(t->t
+                        .analyzer("standard")
+                        .fields(Map.of(
+                            "exact",Property.of(sp->sp.keyword(KeywordProperty.of(k->k))),
+                            "synonym",Property.of(sp->sp.text(TextProperty.of(tp->tp.analyzer("synonym_analyzer")))),
+                            "phonetic",Property.of(sp->sp.text(TextProperty.of(tp->tp.analyzer("phonetic_analyzer")))),
+                            "edge",Property.of(sp->sp.text(TextProperty.of(tp->tp.analyzer("edge_ngram_analyzer"))))
+                        ))
+
+                ))))
                     .properties("slug",Property.of(p->p.keyword(KeywordProperty.of(k->k))))
-                    .properties("short_description",Property.of(p->p.text(TextProperty.of(t->t))))
-                    .properties("full_description",Property.of(p->p.text(TextProperty.of(t->t))))
+                    .properties("short_description",Property.of(p->p.text(TextProperty.of(t->t.fields(Map.of(
+                        "synonym",Property.of(sp->sp.text(TextProperty.of(tp->tp.analyzer("synonym_analyzer"))))
+                    ))))))
+                    .properties("full_description",Property.of(p->p.text(TextProperty.of(t->t.fields(Map.of(
+                        "synonym",Property.of(sp->sp.text(TextProperty.of(tp->tp.analyzer("synonym_analyzer"))))
+                    ))))))
                     .properties("is_active",Property.of(p->p.boolean_(BooleanProperty.of(b->b))))
 
                     .properties("base_price", Property.of(p -> p.double_(DoubleNumberProperty.of(d -> d))))
@@ -80,7 +128,10 @@ public class IndexingService
                     
                     // Brand
                     .properties("brand_id", Property.of(p -> p.long_(LongNumberProperty.of(l -> l))))
-                    .properties("brand_name", Property.of(p -> p.keyword(KeywordProperty.of(k -> k))))
+                    .properties("brand_name", Property.of(p -> p.keyword(KeywordProperty.of(k -> k.fields(Map.of(
+                        "text",Property.of(sp->sp.text(TextProperty.of(tp->tp))),
+                        "phonetic",Property.of(sp->sp.text(TextProperty.of(tp->tp.analyzer("ponetic_analyzer"))))
+                    ))))))
                     .properties("brand_slug", Property.of(p -> p.keyword(KeywordProperty.of(k -> k))))
                     .properties("brand_is_popular", Property.of(p -> p.boolean_(BooleanProperty.of(b -> b))))
                     
@@ -92,8 +143,17 @@ public class IndexingService
                     .properties("category_level", Property.of(p -> p.integer(IntegerNumberProperty.of(i -> i))))
                     
                     // Search fields
-                    .properties("tags", Property.of(p -> p.keyword(KeywordProperty.of(k -> k))))
-                    .properties("search_keywords", Property.of(p -> p.text(TextProperty.of(t -> t))))
+                    .properties("tags", Property.of(p -> p.keyword(KeywordProperty.of(k -> k.fields(Map.of(
+                        "text",Property.of(sp->sp.text(TextProperty.of(tp->tp))),
+                        "synonym",Property.of(sp->sp.text(TextProperty.of(tp->tp.analyzer("synonym_analyzer")))),
+                        "phonetic", Property.of(sp -> sp.text(TextProperty.of(tp -> tp.analyzer("phonetic_analyzer"))))
+                    ))))))
+                    .properties("search_keywords", Property.of(p -> p.text(TextProperty.of(t -> t
+                        .fields(Map.of(
+                            "synonym", Property.of(sp -> sp.text(TextProperty.of(tp -> tp.analyzer("synonym_analyzer")))),
+                            "phonetic", Property.of(sp -> sp.text(TextProperty.of(tp -> tp.analyzer("phonetic_analyzer"))))
+                        ))
+                    ))))
                     .properties("search_boost", Property.of(p -> p.integer(IntegerNumberProperty.of(i -> i))))
                     
                     // Metrics
