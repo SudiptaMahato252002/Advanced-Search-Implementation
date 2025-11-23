@@ -28,7 +28,7 @@ public class ProductDocument
 
     @JsonProperty("short_description")
     private String shortDescription;
-    @JsonProperty("ful_description")
+    @JsonProperty("full_description")
     private String fullDescription;
 
     @JsonProperty("base_price")
@@ -51,7 +51,7 @@ public class ProductDocument
 
     @JsonProperty("brand_id")
     private Long brandId;
-    @JsonProperty("brenad_name")
+    @JsonProperty("brand_name")
     private String brandName;
     @JsonProperty("brand_slug")
     private String brandSlug;
