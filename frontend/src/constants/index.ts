@@ -90,3 +90,29 @@ export interface FilterParams extends SearchParams{
     fuzzy?: boolean,
     sortBy?: string
 }
+
+export interface Suggestion
+{
+    text:string,
+    type: 'product'|'brand'|'catgeory'
+    id: number,
+    score?: number,
+    brand?: string,
+    category?: string,
+    price?: number,
+    inStock?: boolean
+}
+
+export interface AutoCompleteResponse
+{
+    query: string,
+    suggestions: Suggestion[],
+    total: number,
+    cached:boolean,
+    tookMs: number
+}
+
+export interface AutoCompleteParams
+{
+    q?:string
+}

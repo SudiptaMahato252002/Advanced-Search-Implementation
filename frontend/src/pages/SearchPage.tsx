@@ -1,49 +1,92 @@
+// frontend/src/pages/SearchPage.tsx
 
-import { useSearch } from '../hooks/useSearch'
-import SearchBar from '../components/search/SearchBar'
+import { useState } from 'react';
+import { AutoCompleteInput } from '../components/search/AutoCompleteInput';
+import type { Suggestion } from '../constants';
+import { useSearch } from '../hooks/useSearch';
 
-const SearchPage = () => 
-{
-    const {query,setQuery,results,isLoading,error,clearResults}=useSearch({debounceMs:400,minQueryLength:2,pageSize:10})
+const SearchPage = () => {
+  const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
+  const { results, isLoading, error } = useSearch({ debounceMs: 400, minQueryLength: 2, pageSize: 10 });
+
+  const handleSelect = (suggestion: Suggestion) => {
+    console.log('Selected suggestion:', suggestion);
+    setSelectedSuggestion(suggestion);
+    // You can trigger search or navigation based on suggestion type
+    // if (suggestion.type === 'product') navigate to product page
+    // if (suggestion.type === 'brand') filter by brand
+    // if (suggestion.type === 'category') filter by category
+  };
+
+  const handleSearch = (query: string) => {
+    console.log('Search triggered for:', query);
+    // Trigger full search
+  };
+
   return (
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
-        <h1>Search bar debug</h1>
-        <SearchBar
-            value={query}
-            onChange={setQuery}
-            onClear={clearResults}
-            isLoading={isLoading}
-            placeholder='Search products'        
+      <h1>Product Search with Autocomplete</h1>
+      
+      <div style={{ marginTop: '20px' }}>
+        <AutoCompleteInput 
+          onSelect={handleSelect}
+          onSearch={handleSearch}
+          placeholder="Search products, brands, categories..."
         />
-        {error && (
+      </div>
+
+      {selectedSuggestion && (
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '16px', 
+          background: '#f0f9ff', 
+          borderRadius: '8px',
+          border: '1px solid #bae6fd'
+        }}>
+          <h3>Selected Suggestion</h3>
+          <pre style={{ 
+            background: '#1e1e1e', 
+            color: '#00e676', 
+            padding: '16px', 
+            borderRadius: '4px',
+            overflow: 'auto'
+          }}>
+            {JSON.stringify(selectedSuggestion, null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {error && (
         <div style={{ color: 'red', marginTop: '10px' }}>
           <strong>Error:</strong> {error}
         </div>
       )}
+
       {isLoading && (
         <div style={{ marginTop: '20px' }}>
-          <strong>Loading...</strong>
+          <strong>Loading search results...</strong>
         </div>
       )}
+
       {results && (
-        <pre
-          style={{
-            marginTop: '20px',
-            background: '#1e1e1e',
-            color: '#00e676',
-            padding: '20px',
-            borderRadius: '8px',
-            maxHeight: '500px',
-            overflow: 'auto',
-          }}
-        >
-        {JSON.stringify(results, null, 2)}
-        </pre>
+        <div style={{ marginTop: '20px' }}>
+          <h3>Search Results</h3>
+          <pre
+            style={{
+              background: '#1e1e1e',
+              color: '#00e676',
+              padding: '20px',
+              borderRadius: '8px',
+              maxHeight: '500px',
+              overflow: 'auto',
+            }}
+          >
+            {JSON.stringify(results, null, 2)}
+          </pre>
+        </div>
       )}
-
     </div>
-  )
+  );
+};
 
-}
-
-export default SearchPage
+export default SearchPage;

@@ -21,8 +21,7 @@ public class CreateController
 {
     @Autowired
     private CreatingService creatingService;
-    
-
+   
     @PostMapping("/brands")
     public ResponseEntity<BrandDto> createBrand(@RequestBody BrandDto brandDto) {
         // Call service to save brand

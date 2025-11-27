@@ -17,9 +17,7 @@ import com.DatabaseOperations.entities.ProductVariant;
 import com.DatabaseOperations.mappers.ProductVariantMapper;
 import com.DatabaseOperations.repositories.BrandRepository;
 import com.DatabaseOperations.repositories.CategoryRepository;
-import com.DatabaseOperations.repositories.ProductAttributeRepository;
 import com.DatabaseOperations.repositories.ProductRepository;
-import com.DatabaseOperations.repositories.ProductVariantRepsitory;
 import com.DatabaseOperations.requests.ProductRequest;
 
 @Service
@@ -31,11 +29,8 @@ public class CreatingService
     private CategoryRepository categoryRepo;
     @Autowired
     private BrandRepository brandRepo;
-    @Autowired
-    private ProductAttributeRepository productAttributeRepo;
-    @Autowired
-    private ProductVariantRepsitory productVariantRepo;
-
+   @Autowired
+    private RedisCacheService cacheService;
     @Autowired
     private ProductVariantMapper mapper;
 
@@ -181,6 +176,8 @@ public class CreatingService
             });         
         }
         Product savedProduct=productRepo.save(product);
+
+        cacheService.invalidateAllAutocomplete();
 
         ProductDto productDto=ProductDto.builder()
                                 .id(savedProduct.getId())
