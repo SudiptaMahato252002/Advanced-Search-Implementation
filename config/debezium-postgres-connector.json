@@ -1,0 +1,53 @@
+{
+    "name":"postgres-product-connector",
+    "config":{
+        "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+        "tasks.max":"1",
+
+        "database.hostname": "host.docker.internal",
+        "database.port": "5432",
+        "database.user": "debezium_user",
+        "database.password": "debezium_password",
+        "database.dbname": "mydb",
+        "database.server.name": "dbserver",
+
+        "table.include.list": "public.products,public.brands,public.categories,public.product_attributes,public.product_variants,public.product_tags",
+
+        "plugin.name":"pgoutput",
+        "slot.name":"debezium_slot",
+        "publication.name":"dbz_publication",
+
+        "snapshot.mode": "initial",
+        "snapshot.lock.mode": "none",
+
+        "topic.prefix":"dbserver",
+        "topic.creation.default.replication.factor":"1",
+        "topic.creation.default.partitions":"3",
+
+
+        "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "key.converter.schemas.enable": "false",
+        "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+        "value.converter.schemas.enable": "false",
+
+        "transforms":"unwrap,addFields",
+        "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+        "transforms.unwrap.drop.tombstones":"false",
+        "transforms.unwrap.delete.handling.mode":"rewrite",
+        "transforms.unwrap.add.fields": "op,source.ts_ms,source.table",
+
+        "transforms.addFields.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+        "transforms.addFields.timestamp.field": "event_timestamp",
+
+        "heartbeat.interval.ms":"30000",
+        "heartbeat.topics.prefix":"__debezium-heartbeat",
+
+        "max.batch.size": "2048",
+        "max.queue.size":"8192",
+        "poll.interval.ms":"1000",
+
+        "decimal.handling.mode": "double",
+        "time.precision.mode": "adaptive_time_microseconds",
+        "include.schema.changes": "false"
+    }
+}

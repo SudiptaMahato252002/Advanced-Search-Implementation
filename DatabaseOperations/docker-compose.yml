@@ -12,7 +12,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
+    command: >
+      postgres -c wal_level=logical
+               -c max_replication_Slots=10
+               -c max_wal_senders=10
 
+            
   elasticsearch:
     build:
       context: .
